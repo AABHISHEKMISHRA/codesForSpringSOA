@@ -1,0 +1,112 @@
+Solution of problem 1:
+
+Trigger
+
+trigger RollUpSummaryTrigger on Contact (after insert,after delete, after Undelete) {
+
+    if(Trigger.isAfter && Trigger.isInsert){
+        
+        contactInsertedHelperClass.insertContact(Trigger.New);
+    }
+    if(Trigger.isAfter && Trigger.isDelete){
+        
+        contactInsertedHelperClass.insertContact(Trigger.old);
+    }
+    if(Trigger.isAfter && Trigger.isUndelete){
+        
+        contactInsertedHelperClass.insertContact(Trigger.New);
+    }
+}
+
+Helper class
+
+public class contactInsertedHelperClass {
+    
+    public static void insertContact(List<Contact> conList){
+       
+        Set<Id> accIds = new Set<Id>(); 
+        for(Contact con : conList){
+            accIds.add(con.AccountId);        
+        }
+        List<Account> accList = [Select id, Name,(Select id From Contacts), Number_Of_Contacts__c From Account Where Id In : accIds ];
+        for(Account acc : accList){
+            acc.Number_Of_Contacts__c =0;
+            for(Contact con1 : acc.Contacts){
+                acc.Number_Of_Contacts__c =   acc.Number_Of_Contacts__c +1; 
+            }
+        }
+        update accList;
+    }
+     
+}
+
+
+Solution Problem 2:
+
+showRecentAccountRecords.html
+
+<template>
+    <ul>
+        <template for:each={listOfRecordsAcc.data} for:item="acc">
+            <li key={acc.id}>{acc.Name}</li>
+        </template>
+    </ul>
+</template>
+
+
+showRecentAccountRecords.js
+
+import { LightningElement,wire } from 'lwc';
+import getAccs from '@salesforce/apex/getRecentAccs.getAccs';
+
+export default class ShowRecentAccountRecords extends LightningElement {
+
+
+    @wire(getAccs) listOfRecordsAcc;
+    
+}
+
+showRecentAccountRecords.js-meta.xml
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>56.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+    <target>lightning__RecordPage</target>
+    <target>lightning__AppPage</target>
+    <target>lightning__HomePage</target>
+    </targets>
+</LightningComponentBundle>
+
+getRecentAccs.cls
+
+
+public class getRecentAccs {
+
+
+    @AuraEnabled(cacheable=true)
+    public static List<Account> getAccs(){
+
+        List<Account> accList = [Select id, Name from Account order by createdDate DESC LIMIT 10];
+        return accList;
+    }
+}
+
+
+
+Solution Problem 3:
+
+HttpRequest request = new HttpRequest();
+request.setEndpoint('https://postman-echo.com/get?foo1=bar1&foo2=bar2');
+request.setMethod('GET');
+
+HttpResponse response = new Http().send(request);
+String responseBody = response.getBody();
+
+System.debug(responseBody);
+
+
+
+
